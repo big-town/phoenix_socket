@@ -1,0 +1,66 @@
+<html>
+<meta charset="utf-8">
+<script type="text/javascript" src="phoenix.js"></script>
+<script>
+
+  var socket = null;
+  var channel = null;
+  var token = null;
+  var event = null;
+
+  function join_channel() {
+    var channel = document.getElementById("channel").value;
+    var token = document.getElementById("token").value;
+    var socket = document.getElementById("socket").value;
+    var event = document.getElementById("event").value;
+
+    socket = new Socket(socket, { params: { userToken: "" } })
+    socket.connect()
+
+    console.log("channel", channel)
+    console.log("token", token)
+    channel = socket.channel(channel, { token: token })
+    channel.on(event, msg => put_message(msg))
+    channel.join()
+      .receive("ok", ({ messages }) => put_message("Join succesfull"))
+      .receive("error", ({ reason }) => { put_message("failed join " + reason); channel.off(); socket.disconnect(); })
+      .receive("timeout", () => put_message("Networking issue. Still waiting..."))
+  }
+
+  function send_message() {
+    channel.push(event, { message: "Ping ..." }, 10000)
+      .receive("ok", (msg) => console.log("created message", msg))
+      .receive("error", (reasons) => console.log("create failed", reasons))
+      .receive("timeout", () => console.log("Networking issue..."))
+  }
+
+  function put_message(msg) {
+    console.log("catching up", msg)
+    document.getElementById("multitext").value += JSON.stringify(msg) + "\n";
+  }
+</script>
+<style>
+  .grid-container {
+    padding: 20px;
+    margin: 20px;
+  }
+</style>
+
+<div class="grid-container">
+  <textarea rows="20" cols="204" id="multitext"></textarea>
+  <p>
+
+  <p>Socket: <input type="input" id="socket" size=40 value="ws://127.0.0.1:4000/socket">
+  <p>Channel: <input type="input" id="channel" size=40 value="userspace:112">
+  <p>Event: <input type="input" id="event" size=40 value="user_must_vote">
+  <p>Token: <input type="input" id="token" size=200
+      value="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVzX2F0IjpudWxsLCJpZCI6OCwibG9jYWxlIjpudWxsLCJuYW1lIjoidGVzdGVyIiwicm9sZV9jb2RlIjoiYWRtaW4iLCJzdGF0dXMiOiJhY3RpdmUiLCJ0ZWFtX2lkIjoyLCJ0ZWFtX25hbWUiOiJPT08gVGVjaG9zaWxhIiwidGVhbV9zdGF0dXMiOiJhY3RpdmUiLCJ0ZWFtX3R5cGUiOiJwbGF5ZXIiLCJ0eiI6bnVsbCwiZXhwIjoxNTg4NjcwNjU1fQ.E-MUJzpSS8cDX-5atMoql6_oVcYtPT8glEc6VZ1UPgA5OVjzYvL5PVupl6k3jUrTgwoXN2hz0dzufMjBV4Cn4SBZRmMORQmuHCxDtIeS_rT7Zpp_Kd-TlS_hTLX1Q6ZtYDxx-Fuoy1gp7XjlhiFkuMKQy6Ti_Qhlolea9LNof4M">
+  <p>
+    <input type="button" id="b1" value="connect" onclick='join_channel();'>
+  <p>
+
+
+    <input type="button" id="b2" value="send" onclick="send_message();">
+</div>
+
+</html>
